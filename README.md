@@ -75,7 +75,7 @@ About the dataset, in this project we will prepare a collection of 847 questions
 
 ### Solving method
 - Use Vietnamese tokenizer to get results match polymorphemic words.
-- Use standard tokenizer (typically for English) to get results match single morphemes.  
+- Use standard tokenizer (probably for English) to get results match single morphemes.  
 - Eliminate coincident results.
 
 ### Installation of neccessary tools
