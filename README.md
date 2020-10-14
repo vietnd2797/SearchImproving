@@ -202,7 +202,7 @@ POST _bulk
 {"index" : {"_index": "question_index", "_id": 1}}
 {"@timestamp": "08/10/2020 9:01:00 am", "id": 1, "content": "<p>Trong các mệnh đề sau, mệnh đề nào đúng ?</p>", "tokenizer": "vi_tokenizer"}
 ```
-If we use Elasticsearch ```5.4.1```, we have to add ```"type": "doc"``` into ```"index"```. If the addition is successfully, we will retrieve thh following result
+If we use Elasticsearch ```5.4.1```, we have to add ```"type": "doc"``` into ```"index"```. If the addition is successfully, we will retrieve the following result
 
 
 ##### Why we use Elasticsearch 5.4.1 in this project?
@@ -232,6 +232,16 @@ and have attempted to fix this problem but it is inefficient. Therefore I have t
 
 
 #### MongoDB 
+
+For installation of MongoDB, we could check on https://www.mongodb.com/try/download/community to download. The MongoDB Community Server is the appropriate choice, sufficient to use for the small scope. After installing successfully, start the service by running the command:
+```js
+$ path\MongoDB\Server\4.4\bin>mongo.exe
+```
+then we could start to add databases and collections with MongoDB. The default host of MongoDB is http://localhost:27017. Beside this way we could connect to host on MongoDB Compass that is available when installing, and operate on it.
+
+We also check the detail of installation guide on https://docs.mongodb.com/manual/installation/.
+
+
 
 
 
