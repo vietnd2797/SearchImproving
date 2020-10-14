@@ -1,0 +1,29 @@
+﻿@model SearchViewModel
+
+@{
+    ViewData["Title"] = "Search results";
+}
+
+<partial name="_SearchForm" model="Model" />
+
+<h2 class="mt-2">Results for &ldquo;@Model.Term&rdquo;</h2>
+
+@if (Model.Results == null || Model.Results.Count < 1)
+{
+    <em>No results.</em>
+}
+else
+{
+    <h4 class="mt-2">@Model.Results.Count() results found</h4>
+        <ul class="list-group">
+            @foreach (var question in Model.Results)
+            {
+                <li class="list-group-item">
+                    <h5>@question.Content</h5>
+                    <h6><span class="text-muted">ID:</span> @question.ID </h6>
+                    <h6><span class="text-muted">Tokenizer:</span>@question.Tokenizer</h6>
+                    <h6><span class="text-muted">Date created:</span> @question.Timestamp </h6>
+                </li>
+            }
+        </ul>
+}

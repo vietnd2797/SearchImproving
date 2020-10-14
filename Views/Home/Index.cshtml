@@ -1,0 +1,29 @@
+﻿@model HomeViewModel
+
+@{
+    ViewData["Title"] = "Home";
+}
+
+
+<div class="row">
+    <div class="col-md-6">
+        <h2>Search</h2>
+        <partial name="_SearchForm" model="null" />
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-12">
+        <h2>Inserted Data</h2>
+        <div class="form-group">
+            <textarea class="form-control" name="inserted-data" id="inserted-data" rows="10" readonly="readonly">@Model.InsertedData</textarea>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
