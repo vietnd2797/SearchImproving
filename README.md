@@ -78,7 +78,7 @@ About the dataset, in this project we will prepare a collection of 847 questions
 - Use standard tokenizer (probably for English) to get results match single morphemes.  
 - Eliminate coincident results.
 
-For deploying this method, we need to create 2 indices for the Vietnamese tokenizer and the standard tokenizer in Elasticsearch, such that we could do searching on them.
+For deploying this method, we need to create 2 indices for the Vietnamese tokenizer and the standard tokenizer in Elasticsearch, and we could do searching on them.
 
 ### Installation of neccessary tools
 
@@ -263,7 +263,7 @@ If we use Elasticsearch ```5.4.1```, we have to add ```"type": "doc"``` into ```
 
 ##### Why we use Elasticsearch 5.4.1 in this project?
 
-As we argument above, although the latest version of Elasticsearch is ```7.9.2``` at the present, but in this project we use the version ```5.4.1```, because when I use Elasticsearch ```7.3.1``` (therefore I have to use Kibana and Duy Do's plugin with this version respectively), I am unable to add a document (specifically, the question) with the field value has HTML tags. Such that with my usage of ```POST _bulk``` above, I have got the following message:
+As we argument above, although the latest version of Elasticsearch is ```7.9.2``` at the present, but in this project we use the version ```5.4.1```, because when I use Elasticsearch ```7.3.1``` (therefore I have to use Kibana and Duy Do's plugin with this version respectively), I am unable to add a document (specifically, the question) with the field value has HTML tags. When I use ```POST _bulk``` like above, I have got the following message:
 ```js
 {
   "took" : 12,
@@ -329,9 +329,94 @@ The reason for the disappearance of the property ```Tokenizer``` is that I have 
 ### About using Elasticsearch with ASP.NET Core
 
 
+Elasticsearch supplies two clients in order to build and represent our requests and responses, they are Elasticsearch.Net and Nest . For using Elasticsearch with ASP.NET Core, we need to use both of them, we could install them into our project via NuGet.
+Note that the version of them have to be less than or equal to the version of Elasticsearch, therefore in this project I use ```5.4.0``` version. We also have to install a dependency is Newtonsoft.Json (in this project, the ```10.0.1``` version is compatible with the ```5.4.0```version)
+to avoid warnings when running.
 
 
+#### Connecting Elasticsearch
 
+```js
+var uri = new Uri("http://localhost:9200");
+
+var connectionPool = new SingleNodeConnectionPool(uri);
+
+List<ElasticClient> clients = new List<ElasticClient>();
+foreach (var indexName in indexNames)
+{
+    var settings = new ConnectionSettings(connectionPool).DefaultIndex(indexName);
+    clients.Add(new ElasticClient(settings));
+}    
+
+return clients;
+```
+Note that in this above code block, I have created 2 clients for 2 intented indices in Elasticsearch.
+
+
+#### Creating indices 
+After creating client, we could use its methods with the functions are equivalent to methods on Elasticsearch syntax. It is neccessary to note that we just consider the property of object that we need to apply the tokenizer to it.
+Specifically, it is the field ```Content``` and we will use ```my_analyzer``` to it. For the remaining properties, we use ```.AutoMap()``` to add them into ```Mappings``` of the index.
+
+```js
+List<ElasticClient> _clients = _initializer.ElasticsearchClient();
+
+if ((await _clients.ElementAt(0).IndexExistsAsync("questions")).Exists)
+{
+    await _clients.ElementAt(0).DeleteIndexAsync("questions");
+}
+
+var createIndexResponse1 = _clients.ElementAt(0).CreateIndex("questions", c => c
+                                                 .Settings(s => s
+                                                     .NumberOfReplicas(0)
+                                                     .NumberOfShards(1)
+                                                     .Analysis(a => a
+                                                        .Analyzers(an => an
+                                                            .Custom("my_analyzer", ca => ca
+                                                                .CharFilters("html_strip")
+                                                                .Tokenizer("vi_tokenizer")
+                                                                .Filters("lowercase")))))
+                                                  .Mappings(m => m
+                                                     .Map<Question>(mm => mm
+                                                        .AutoMap()
+                                                        .Properties(p => p
+                                                            .Text(t => t
+                                                                .Name(n => n.Content)
+                                                                .Analyzer("my_analyzer"))))));
+```
+#### Importing data from MongoDB to Elasticsearch
+
+
+For importing data from MongoDB to Elasticsearch, we will convert all data as a list and get the field value into properties in the C# object, then add each of them to Elasticsearch.
+
+```js
+IMongoDatabase db = mongoClient.GetDatabase("Question");
+
+IMongoCollection<BsonDocument> collection1 = db.GetCollection<BsonDocument>("questions");
+
+List<BsonDocument> documents1 = collection1.Find(new BsonDocument()).ToList();
+
+List<Question> questions1 = new List<Question>();
+
+foreach (var doc in documents1)
+{
+    Question question = new Question()
+    {
+        ID = (int)doc.GetElement("ID").Value,
+        Content = (string)doc.GetElement("Content").Value,
+        Tokenizer = (string)doc.GetElement("Tokenizer").Value,
+        Timestamp = (string)doc.GetElement("Timestamp").Value
+    };
+    questions1.Add(question);
+    var indexResponse = await _clients.ElementAt(0).IndexAsync(question);
+    if (!indexResponse.IsValid)
+    {
+        var errorMsg = "Problem inserting document to Elasticsearch!";
+        _logger.LogError(indexResponse.OriginalException, errorMsg);
+        throw new Exception(errorMsg);
+    }
+                
+}
+```
 
 
 
