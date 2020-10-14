@@ -61,7 +61,7 @@ In this project we will combine both of the Vietnamese and English tokenizers, a
 - Results match component words like: "phương trình", "bậc hai".
 - Results match single morphemes like: "phương", "trình", "bậc", "hai".
 
-About the dataset, in this project we will prepare a collection of 847 questions as strings that contain both of plain text and HTML tags. All of questions are imported and stored in a given database, such we just need to get them from database, added them into indices that is created in Elasticsearch and operate with ASP.Net Core (C# language) via dependencies such as Elasticsearch.Net and Nest.
+About the dataset, in this project we will prepare a collection of 847 questions as strings that contain both of plain text and HTML tags. All questions are imported and stored in a given database, such we just need to get them from database, added them into indices that is created in Elasticsearch and operate with ASP.Net Core (C# language) via dependencies such as Elasticsearch.Net and Nest.
 
 
 ### Neccessary tools
@@ -69,14 +69,16 @@ About the dataset, in this project we will prepare a collection of 847 questions
 - Use Elasticsearch to improve the performance of searching (Good for the version ```5.4.1```)
 - Use MongoDB as a place to store data and import them to Elasticsearch.
 - ASP.Net Core ```3.1```
-- Dependencies for project: Elasticsearch.Net ```5.4.0```, Nest ```5.4.0```, Newtonsoft.Json ```10.0.1```
+- Dependencies for project: Elasticsearch.Net ```5.4.0```, Nest ```5.4.0```, Newtonsoft.Json ```10.0.1```, MongoDB.Bson ```2.11.2``` and MongoDB.Driver ```2.11.2```. 
 - Use Kibana (optional) to run test code on it if we need.
- 
+- Microsoft Visual Studio (with ASP.NET Core installed)
 
 ### Solving method
 - Use Vietnamese tokenizer to get results match polymorphemic words.
 - Use standard tokenizer (probably for English) to get results match single morphemes.  
 - Eliminate coincident results.
+
+For deploying this method, we need to create 2 indices for the Vietnamese tokenizer and the standard tokenizer in Elasticsearch, such that we could do searching on them.
 
 ### Installation of neccessary tools
 
@@ -138,7 +140,7 @@ $ C:\elasticsearch-5.4.1\bin>elasticsearch-plugin install file:\\\path\elasticse
 ```
 Then we need to close the Elasticsearch and restart it in order to reload the plugin. Because of the simplicity of this way, such I decide to use and suggest it to beginners. 
 
-After installing successfully, we could check the operation of the plugin by creating an index as follow aa (In this case I create an index with the intended object is question with 3 fields: timestamp, id, content and the tokenizer name that is used):
+After installing successfully, we could check the operation of the plugin by creating an index as follows (In this case I create an index with the intended object is question with 3 fields: timestamp, id, content and the tokenizer name that is used):
 ```js
 PUT question_index
 {    
@@ -202,8 +204,62 @@ POST _bulk
 {"index" : {"_index": "question_index", "_id": 1}}
 {"@timestamp": "08/10/2020 9:01:00 am", "id": 1, "content": "<p>Trong các mệnh đề sau, mệnh đề nào đúng ?</p>", "tokenizer": "vi_tokenizer"}
 ```
-If we use Elasticsearch ```5.4.1```, we have to add ```"type": "doc"``` into ```"index"```. If the addition is successfully, we will retrieve the following result
-
+If we use Elasticsearch ```5.4.1```, we have to add ```"type": "doc"``` into ```"index"```. If the addition is successfully, we will retrieve the following result:
+```js
+{
+  "tokens": [
+    {
+      "token": "trong",
+      "start_offset": 0,
+      "end_offset": 7,
+      "type": "word",
+      "position": 0
+    },
+    {
+      "token": "các",
+      "start_offset": 10,
+      "end_offset": 13,
+      "type": "word",
+      "position": 1
+    },
+    {
+      "token": "mệnh đề",
+      "start_offset": 16,
+      "end_offset": 23,
+      "type": "word",
+      "position": 2
+    },
+    {
+      "token": "sau",
+      "start_offset": 26,
+      "end_offset": 29,
+      "type": "word",
+      "position": 3
+    },
+    {
+      "token": "mệnh đề",
+      "start_offset": 32,
+      "end_offset": 39,
+      "type": "word",
+      "position": 5
+    },
+    {
+      "token": "nào",
+      "start_offset": 42,
+      "end_offset": 48,
+      "type": "word",
+      "position": 7
+    },
+    {
+      "token": "đúng",
+      "start_offset": 54,
+      "end_offset": 58,
+      "type": "word",
+      "position": 9
+    }
+  ]
+}
+```
 
 ##### Why we use Elasticsearch 5.4.1 in this project?
 
@@ -240,6 +296,40 @@ $ path\MongoDB\Server\4.4\bin>mongo.exe
 then we could start to add databases and collections with MongoDB. The default host of MongoDB is http://localhost:27017. Beside this way we could connect to host on MongoDB Compass that is available when installing, and operate on it.
 
 We also check the detail of installation guide on https://docs.mongodb.com/manual/installation/.
+
+### Preparing data 
+
+Because our project is a test project, therefore we does not have an available dataset such we have to create a custom dataset. The size of dataset is in circa from 800 to 1000 (847 in this project) therefore data could be stored in a container like list or array. 
+We could use C# language to write code for importing data to a database in MongoDB via dependencies such as MongoDB.Bson and MongoDB.Driver. We could install dependencies in a Visual Studio project by doing a right-click to ```Dependencies -> Package``` and choose ```Manage NuGet Packages...```
+then choose ```Browse``` tab, search your intended dependency and install it.
+
+The simple code could be as follows:
+```js
+var client = new MongoClient("mongodb://localhost");
+
+IMongoDatabase db = client.GetDatabase("Question");
+
+var collection1 = db.GetCollection<Question>("questions");
+
+for (int i = 0; i < data.Count(); i++)
+{
+    var question = new Question
+    {
+        ID = i + 1,
+        Content = data.ElementAt(i),
+        Tokenizer = "vi_tokenizer"
+    };
+    collection1.InsertOne(question);
+}
+```
+In the above code block, I have created an ```Question``` object with 4 properties: ```ID```, ```Content```, ```Tokenizer``` and ```Timestamp```, then stored all questions in a list of ```Question``` objects and imported each of them into the MongoDB collection.
+The reason for the disappearance of the property ```Tokenizer``` is that I have initialized ```Tokenizer``` to the present time when declaring it. 
+
+
+### About using Elasticsearch with ASP.NET Core
+
+
+
 
 
 
